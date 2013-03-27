@@ -1,0 +1,49 @@
+import gevent
+from gevent import getcurrent
+from gevent.pool import Group
+
+group = Group()
+
+def hello_from(n):
+    print('Size of group', len(group))
+    print('Hello from Greenlet %s' % id(getcurrent()))
+
+group.map(hello_from, xrange(3))
+
+def intensive(n):
+    gevent.sleep(3 - n)
+    return 'task', n
+
+print('Ordered')
+
+ogroup = Group()
+
+'''
+think of it this way:
+def imap(function, *iterables):
+    # imap(pow, (2,3,10), (5,2,3)) --> 32 9 1000
+    iterables = map(iter, iterables)
+    while True:
+        args = [next(it) for it in iterables]
+        if function is None:
+            yield tuple(args)
+        else:
+            yield function(*args)
+'''
+# why is this executing all at once?
+for i in ogroup.imap(intensive, xrange(3)):
+    print(i)
+
+print('Unordered')
+
+group = Group()
+
+'''
+imap_unordered
+The same as imap() except that the ordering of the results from the returned iterator should be considered in arbitrary order.
+'''
+# why is this iterating one at a time?
+# gevent is deterministic.  hence each greenlet is processed in order in deterministed way
+for i in igroup.imap_unordered(intensive, xrange(3)):
+    print(i)
+
